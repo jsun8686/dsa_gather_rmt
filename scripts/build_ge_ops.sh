@@ -26,7 +26,11 @@ fi
 echo "[ge_ops] build DsaGatherRmt custom op (ascend950) ..."
 mkdir -p "$BUILD_DIR"
 cd "$BUILD_DIR"
-cmake .. "${ASC_DEVKIT_ROOT:+-DASC_DEVKIT_ROOT=$ASC_DEVKIT_ROOT}"
+cmake_args=(..)
+if [ -n "${ASC_DEVKIT_ROOT:-}" ]; then
+    cmake_args+=(-DASC_DEVKIT_ROOT="$ASC_DEVKIT_ROOT")
+fi
+cmake "${cmake_args[@]}"
 make -j"$JOBS" binary package
 
 RUN_PKG=$(find "$BUILD_DIR" -maxdepth 1 -name "custom_opp_*.run" -print -quit)
@@ -40,6 +44,10 @@ mkdir -p "$INSTALL_DIR"
 "$RUN_PKG" --install-path="$INSTALL_DIR"
 
 VENDOR_DIR=$(find "$INSTALL_DIR" -maxdepth 4 -type d -path "*vendors*" -print -quit)
+if [ -z "$VENDOR_DIR" ]; then
+    echo "[ge_ops] ERROR: vendors dir not found under $INSTALL_DIR" >&2
+    exit 1
+fi
 echo "[ge_ops] done. vendors dir: $VENDOR_DIR"
 echo "[ge_ops] runtime env (GE 图模式必需):"
 cat <<EOF
